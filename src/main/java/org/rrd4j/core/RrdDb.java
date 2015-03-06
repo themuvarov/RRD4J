@@ -555,6 +555,12 @@ public class RrdDb implements RrdUpdater {
         double[] newValues = sample.getValues();
         for (int i = 0; i < datasources.length; i++) {
             double newValue = newValues[i];
+
+            if (newTime - lastTime >= datasources[i].getHeartbeat()) {
+                datasources[i].process(newTime - 1, Double.NaN);
+                header.setLastUpdateTime(newTime - 1);
+            }
+ 
             datasources[i].process(newTime, newValue);
         }
         header.setLastUpdateTime(newTime);
