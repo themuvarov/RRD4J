@@ -1,6 +1,7 @@
 package org.rrd4j.core;
 
 import org.rrd4j.ConsolFun;
+import org.rrd4j.DsType;
 
 import java.io.*;
 import java.util.Date;
@@ -556,7 +557,7 @@ public class RrdDb implements RrdUpdater {
         for (int i = 0; i < datasources.length; i++) {
             double newValue = newValues[i];
 
-            if (newTime - lastTime >= datasources[i].getHeartbeat()) {
+            if (datasources[i].getType() == DsType.GAUGE && newTime - lastTime >= datasources[i].getHeartbeat()) {
                 datasources[i].process(newTime - 1, Double.NaN);
                 header.setLastUpdateTime(newTime - 1);
             }

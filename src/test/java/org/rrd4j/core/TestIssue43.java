@@ -2,7 +2,11 @@ package org.rrd4j.core;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Date;
+import java.util.Map;
+import java.util.TreeMap;
 
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,29 +83,49 @@ public class TestIssue43 {
                 System.out.println("rrdtool " + rrdDb.getRrdDef().dump().replace("--version 2", ""));
                 final long castedStartDateTime = castDateTimeForRRD(startDateTime,
                         samplingRate);
-                //long oldDateTime = -1L;
+
+                long newDateTime = castedStartDateTime;
+
                 for (int index = 1; index <= dataCount; index += dataRate) {
-
-
-                        long newDateTime = castedStartDateTime + samplingRate * index;
-
-                        /*if(oldDateTime != -1 && (newDateTime - oldDateTime) >= heartbeat) {
-                                System.out.println("DUBEC did correction");
-                                final Sample sample = rrdDb.createSample();
-                                sample.setTime(newDateTime - 1);
-                                sample.setValue(datasourceName, MIN_VALUE);
-                                System.out.println("rrdtool " + sample.dump());
-                                sample.update();
-                        }*/
-
-                        final Sample sample2 = rrdDb.createSample();
-                        sample2.setTime(newDateTime);
-                        sample2.setValue(datasourceName, data++);
-                        System.out.println("rrdtool " + sample2.dump());
-                        sample2.update();
-                        //oldDateTime = newDateTime;
+                        newDateTime = castedStartDateTime + samplingRate * index;
+                        final Sample sample = rrdDb.createSample();
+                        sample.setTime(newDateTime);
+                        sample.setValue(datasourceName, data++);
+                        System.out.println("rrdtool " + sample.dump());
+                        sample.update();
                 }
-                System.out.println("rrdtool dump " + rrdDb.getCanonicalPath());
-                System.out.println(rrdDb.exportXml());
+
+                final FetchRequest request = rrdDb.createFetchRequest(
+                        ConsolFun.MIN,
+                        castedStartDateTime,
+                        newDateTime, samplingRate);
+
+                int index = 0;
+                Map<Long, Double> results = new TreeMap<Long, Double>();
+
+                if (request.fetchData().getRowCount() > 0) {
+                        final double[] values = request.fetchData()
+                                .getValues(rrdDb.getDatasource(0).getName());
+                        final long[] timestamps = request
+                                .fetchData().getTimestamps();
+                        for (final long timestamp : timestamps) {
+                                 results.put(
+                                        timestamp,
+                                        values[index]);
+                                index++;
+                        }
+                }
+
+                Assert.assertEquals("assert1 ", results.get(1369748048L), Double.NaN);
+                Assert.assertEquals("assert2 ", results.get(1369748049L), 1.0);
+                Assert.assertEquals("assert3 ", results.get(1369748050L), Double.NaN);
+                Assert.assertEquals("assert4 ", results.get(1369748051L), Double.NaN);
+                Assert.assertEquals("assert5 ", results.get(1369748052L), 2.0);
+                Assert.assertEquals("assert6 ", results.get(1369748053L), Double.NaN);
+                Assert.assertEquals("assert7 ", results.get(1369748054L), Double.NaN);
+                Assert.assertEquals("assert8 ", results.get(1369748055L),3.0);
+                Assert.assertEquals("assert9 ", results.get(1369748056L), Double.NaN);
+                Assert.assertEquals("assert10 ", results.get(1369748057L), Double.NaN);
+                Assert.assertEquals("assert11 ", results.get(1369748058L), 4.0);
         }
 }
